@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/authContext";
 import { supabase } from "@/lib/supabase";
-import { getProducts, updateProduct, deleteProduct, addProduct, BRANDS, type Product } from "@/lib/products";
+import { getProducts, updateProduct, deleteProduct, addProduct, BRANDS, getModels, getModelsByBrand, type Product, type Model } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +14,9 @@ import AdminMenuManager from "@/components/AdminMenuManager";
 import AdminHeroConfig from "@/components/AdminHeroConfig";
 import AdminProductHighlights from "@/components/AdminProductHighlights";
 import AdminBrandsManager from "@/components/AdminBrandsManager";
+import AdminModelManager from "@/components/AdminModelManager";
 import AdminVariantManager from "@/components/AdminVariantManager";
-import ModelSelector from "@/components/ModelSelector";
-import { Pencil, Trash2, Plus, LogOut, Loader2, BarChart3, Package, Menu, Image, Star, Tag, Database, Power } from "lucide-react";
+import { Pencil, Trash2, Plus, LogOut, Loader2, BarChart3, Package, Menu, Image, Star, Tag, Database, Power, Grid2x2 } from "lucide-react";
 import MigrationHelper from "@/components/MigrationHelper";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,16 +40,18 @@ export default function AdminDashboard() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const [modelsByBrand, setModelsByBrand] = useState<Model[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"insights" | "produtos" | "menu" | "marcas" | "hero" | "destaques" | "migracao">("insights");
+  const [activeTab, setActiveTab] = useState<"insights" | "produtos" | "menu" | "marcas" | "modelos" | "hero" | "destaques" | "migracao">("insights");
 
   const [form, setForm] = useState({
     name: "",
     brand: "Apple",
-    model_id: "",
+    model_id: undefined as string | undefined,
     price: 0,
     original_price: undefined as number | undefined,
     description: "",
@@ -86,6 +88,14 @@ export default function AdminDashboard() {
       } else {
         setBrands(BRANDS);
       }
+
+      // Load models
+      const modelsList = await getModels();
+      setModels(modelsList);
+
+      // Load models for selected brand
+      const initialModels = await getModelsByBrand("Apple");
+      setModelsByBrand(initialModels);
     } catch (err) {
       console.error("Error loading products:", err);
       toast({
@@ -111,6 +121,7 @@ export default function AdminDashboard() {
       const productData = {
         name: form.name,
         brand: form.brand,
+        modelId: form.model_id,
         price: form.price,
         originalPrice: form.original_price || undefined,
         description: form.description,
@@ -147,11 +158,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = async (product: Product) => {
     setForm({
       name: product.name,
       brand: product.brand,
-      model_id: product.modelId || "",
+      model_id: product.modelId,
       price: product.price,
       original_price: product.originalPrice || undefined,
       description: product.description,
@@ -166,6 +177,9 @@ export default function AdminDashboard() {
       promotion: product.promotion,
       is_on_request: product.isOnRequest || false,
     });
+    // Load models for the selected brand
+    const brandModels = await getModelsByBrand(product.brand);
+    setModelsByBrand(brandModels);
     setEditing(product.id);
     setShowForm(true);
   };
@@ -218,7 +232,7 @@ export default function AdminDashboard() {
     setForm({
       name: "",
       brand: "Apple",
-      model_id: "",
+      model_id: undefined,
       price: 0,
       original_price: undefined,
       description: "",
@@ -324,6 +338,17 @@ export default function AdminDashboard() {
           Marcas
         </button>
         <button
+          onClick={() => setActiveTab("modelos")}
+          className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === "modelos"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Grid2x2 className="h-4 w-4" />
+          Modelos
+        </button>
+        <button
           onClick={() => setActiveTab("hero")}
           className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
             activeTab === "hero"
@@ -379,6 +404,13 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Modelos Tab */}
+      {activeTab === "modelos" && (
+        <div className="mb-8">
+          <AdminModelManager />
+        </div>
+      )}
+
       {/* Hero Tab */}
       {activeTab === "hero" && (
         <div className="mb-8">
@@ -412,13 +444,20 @@ export default function AdminDashboard() {
               {/* Básico */}
               <div className="space-y-2">
                 <h3 className="font-medium text-sm text-muted-foreground">Informações Básicas</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Input
                     placeholder="Nome do produto"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
-                  <Select value={form.brand} onValueChange={(v) => setForm({ ...form, brand: v })}>
+                  <Select
+                    value={form.brand}
+                    onValueChange={async (v) => {
+                      setForm({ ...form, brand: v, model_id: undefined });
+                      const brandModels = await getModelsByBrand(v);
+                      setModelsByBrand(brandModels);
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione marca" />
                     </SelectTrigger>
@@ -430,16 +469,18 @@ export default function AdminDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                    Modelo
-                  </label>
-                  <ModelSelector
-                    value={form.model_id}
-                    onSelect={(modelId) => setForm({ ...form, model_id: modelId })}
-                    brand={form.brand}
-                  />
+                  <Select value={form.model_id || ""} onValueChange={(v) => setForm({ ...form, model_id: v || undefined })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {modelsByBrand.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

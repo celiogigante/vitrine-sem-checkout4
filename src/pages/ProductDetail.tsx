@@ -4,7 +4,7 @@ import { ArrowLeft, MessageCircle, Shield, CheckCircle, BatteryFull } from "luci
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { conditionLabel, conditionColor, getWhatsAppLink, statusLabel, statusColor, type Product, getProduct, incrementViews, getProductVariants, conditionLabel as getConditionLabel } from "@/lib/products";
+import { conditionLabel, conditionColor, getWhatsAppLink, statusLabel, statusColor, type Product, getProduct, incrementViews, incrementModelViews, getProductVariants, conditionLabel as getConditionLabel } from "@/lib/products";
 import { recordProductClick, recordProductView } from "@/hooks/useProductClick";
 import type { ProductVariant } from "@/lib/supabase";
 import "@/styles/gallery-slide.css";
@@ -54,6 +54,11 @@ const ProductDetail = () => {
         // Increment views
         await incrementViews(productId);
         console.log("Views incrementadas para:", (product.views || 0) + 1);
+
+        // Increment model views if product has a model
+        if (product.modelId) {
+          await incrementModelViews(product.modelId);
+        }
 
         // Record product view
         recordProductView(productId);

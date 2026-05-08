@@ -23,10 +23,21 @@ export const supabase = createClient(
 );
 
 // Tipos para as tabelas
+export interface Model {
+  id: string;
+  name: string;
+  brand: string;
+  description?: string;
+  views: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   brand: string;
+  model_id?: string;
   price: number;
   original_price?: number;
   description: string;

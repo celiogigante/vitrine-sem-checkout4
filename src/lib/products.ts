@@ -1,7 +1,16 @@
 import { supabase } from "@/lib/supabase";
-import type { ProductVariant } from "@/lib/supabase";
+import type { ProductVariant, Model as SupabaseModel } from "@/lib/supabase";
 
 export type ProductStatus = "disponivel" | "vendido" | "reservado";
+
+export interface Model {
+  id: string;
+  name: string;
+  brand: string;
+  description?: string;
+  views: number;
+  createdAt: string;
+}
 
 export interface Product {
   id: string;
@@ -149,6 +158,7 @@ export async function addProduct(
         {
           name: product.name,
           brand: product.brand,
+          model_id: product.modelId,
           price: product.price,
           original_price: product.originalPrice,
           description: product.description,
@@ -195,6 +205,7 @@ export async function updateProduct(
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.brand !== undefined) updateData.brand = data.brand;
+    if (data.modelId !== undefined) updateData.model_id = data.modelId;
     if (data.price !== undefined) updateData.price = data.price;
     if (data.originalPrice !== undefined) updateData.original_price = data.originalPrice;
     if (data.description !== undefined) updateData.description = data.description;
@@ -488,5 +499,177 @@ export async function deleteProductVariant(variantId: string): Promise<boolean> 
   } catch (err) {
     console.error("Exception deleting variant:", err);
     return false;
+  }
+}
+
+// ===== Models (Modelos de Produtos) =====
+
+export async function getModels(): Promise<Model[]> {
+  try {
+    const { data, error } = await supabase
+      .from("models")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching models:", error);
+      return [];
+    }
+
+    return (data || []).map((m: any) => ({
+      id: m.id,
+      name: m.name,
+      brand: m.brand,
+      description: m.description,
+      views: m.views || 0,
+      createdAt: m.created_at,
+    }));
+  } catch (err) {
+    console.error("Exception fetching models:", err);
+    return [];
+  }
+}
+
+export async function getModelsByBrand(brand: string): Promise<Model[]> {
+  try {
+    const { data, error } = await supabase
+      .from("models")
+      .select("*")
+      .eq("brand", brand)
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching models by brand:", error);
+      return [];
+    }
+
+    return (data || []).map((m: any) => ({
+      id: m.id,
+      name: m.name,
+      brand: m.brand,
+      description: m.description,
+      views: m.views || 0,
+      createdAt: m.created_at,
+    }));
+  } catch (err) {
+    console.error("Exception fetching models by brand:", err);
+    return [];
+  }
+}
+
+export async function addModel(model: Omit<Model, "id" | "views" | "createdAt">): Promise<Model | null> {
+  try {
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from("models")
+      .insert([
+        {
+          name: model.name,
+          brand: model.brand,
+          description: model.description,
+          views: 0,
+          created_at: now,
+          updated_at: now,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating model:", error);
+      return null;
+    }
+
+    return data ? {
+      id: data.id,
+      name: data.name,
+      brand: data.brand,
+      description: data.description,
+      views: data.views || 0,
+      createdAt: data.created_at,
+    } : null;
+  } catch (err) {
+    console.error("Exception creating model:", err);
+    return null;
+  }
+}
+
+export async function updateModel(id: string, model: Partial<Model>): Promise<Model | undefined> {
+  try {
+    const updateData: any = {};
+
+    if (model.name !== undefined) updateData.name = model.name;
+    if (model.brand !== undefined) updateData.brand = model.brand;
+    if (model.description !== undefined) updateData.description = model.description;
+    if (model.views !== undefined) updateData.views = model.views;
+
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from("models")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating model:", error);
+      return undefined;
+    }
+
+    return data ? {
+      id: data.id,
+      name: data.name,
+      brand: data.brand,
+      description: data.description,
+      views: data.views || 0,
+      createdAt: data.created_at,
+    } : undefined;
+  } catch (err) {
+    console.error("Exception updating model:", err);
+    return undefined;
+  }
+}
+
+export async function deleteModel(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("models")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting model:", error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Exception deleting model:", err);
+    return false;
+  }
+}
+
+export async function incrementModelViews(modelId: string): Promise<void> {
+  try {
+    const { data: model, error: fetchError } = await supabase
+      .from("models")
+      .select("views")
+      .eq("id", modelId)
+      .single();
+
+    if (fetchError || !model) return;
+
+    const { error } = await supabase
+      .from("models")
+      .update({ views: (model.views || 0) + 1, updated_at: new Date().toISOString() })
+      .eq("id", modelId);
+
+    if (error) {
+      console.error("Error incrementing model views:", error);
+    }
+  } catch (err) {
+    console.error("Exception incrementing model views:", err);
   }
 }
