@@ -3,13 +3,17 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, MessageCircle, Shield, CheckCircle, BatteryFull } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { conditionLabel, conditionColor, getWhatsAppLink, statusLabel, statusColor, type Product, getProduct, incrementViews } from "@/lib/products";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { conditionLabel, conditionColor, getWhatsAppLink, statusLabel, statusColor, type Product, getProduct, incrementViews, getProductVariants, conditionLabel as getConditionLabel } from "@/lib/products";
 import { recordProductClick, recordProductView } from "@/hooks/useProductClick";
+import type { ProductVariant } from "@/lib/supabase";
 import "@/styles/gallery-slide.css";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState<Product | undefined>();
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>();
   const [selectedImage, setSelectedImage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,6 +43,13 @@ const ProductDetail = () => {
 
       if (product) {
         setProduct(product);
+
+        // Load variants
+        const variantsList = await getProductVariants(productId);
+        setVariants(variantsList);
+        if (variantsList.length > 0) {
+          setSelectedVariant(variantsList[0]);
+        }
 
         // Increment views
         await incrementViews(productId);
@@ -136,21 +147,79 @@ const ProductDetail = () => {
             </div>
           </div>
 
+          {/* Seletor de Variações */}
+          {variants.length > 0 && (
+            <div className="space-y-3 rounded-lg border border-gray-700 bg-gray-900 p-4 md:p-5">
+              <p className="text-xs md:text-sm font-semibold text-gray-300 uppercase tracking-wide">Selecione a variação</p>
+              <Select
+                value={selectedVariant?.id || ""}
+                onValueChange={(variantId) => {
+                  const variant = variants.find(v => v.id === variantId);
+                  setSelectedVariant(variant);
+                }}
+              >
+                <SelectTrigger className="w-full text-sm">
+                  <SelectValue placeholder="Escolha uma variação" />
+                </SelectTrigger>
+                <SelectContent>
+                  {variants.map((variant) => (
+                    <SelectItem key={variant.id} value={variant.id}>
+                      <div className="flex items-center gap-2">
+                        {variant.color && <span>{variant.color}</span>}
+                        {variant.storage && <span>{variant.storage}</span>}
+                        {variant.ram && <span>{variant.ram}</span>}
+                        <span>- R$ {variant.price.toFixed(2)}</span>
+                        {variant.stock_quantity <= 0 && <span className="text-orange-500">(Indisponível)</span>}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {selectedVariant && (
+                <div className="text-xs md:text-sm text-gray-300 space-y-1 pt-2 border-t border-gray-700">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Condição:</span>
+                    <span className="font-medium">{conditionLabel(selectedVariant.condition)}</span>
+                  </div>
+                  {selectedVariant.specific_defects && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Defeitos:</span>
+                      <span className="font-medium text-orange-400">{selectedVariant.specific_defects}</span>
+                    </div>
+                  )}
+                  {selectedVariant.stock_quantity <= 0 && (
+                    <div className="text-orange-400 font-medium">⚠️ Este item está indisponível</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg md:rounded-xl p-4 md:p-6 border border-gray-700">
-            {product.originalPrice && (
-              <p className="text-xs md:text-sm text-gray-400 line-through mb-2">R$ {product.originalPrice.toLocaleString("pt-BR")}</p>
+            {(selectedVariant?.original_price || product.originalPrice) && (
+              <p className="text-xs md:text-sm text-gray-400 line-through mb-2">
+                R$ {(selectedVariant?.original_price || product.originalPrice)?.toLocaleString("pt-BR")}
+              </p>
             )}
-            <p className="text-4xl md:text-5xl font-extrabold text-yellow-400">R$ {product.price.toLocaleString("pt-BR")}</p>
+            <p className="text-4xl md:text-5xl font-extrabold text-yellow-400">
+              R$ {(selectedVariant?.price || product.price).toLocaleString("pt-BR")}
+            </p>
           </div>
 
-          {!sold ? (
+          {!sold && selectedVariant?.stock_quantity > 0 ? (
             <>
               <Button
                 size="lg"
                 className="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm md:text-base py-5 md:py-6 font-semibold shadow-lg transition-all active:scale-95"
                 onClick={() => {
                   handleWhatsAppClick();
-                  window.open(getWhatsAppLink(product), "_blank");
+                  const variant = selectedVariant || variants[0];
+                  const variantInfo = variant ? ` (${[variant.color, variant.storage, variant.ram].filter(Boolean).join(', ')})` : '';
+                  window.open(
+                    `https://wa.me/5566992473929?text=${encodeURIComponent(`Olá, tenho interesse no *${product.name}${variantInfo}*, ainda está disponível?`)}`,
+                    "_blank"
+                  );
                 }}
               >
                 <MessageCircle className="mr-2 h-4 md:h-5 w-4 md:w-5" /> Negociar pelo WhatsApp
@@ -165,7 +234,13 @@ const ProductDetail = () => {
               )}
             </>
           ) : (
-            <Button size="lg" disabled className="w-full text-sm md:text-base py-5 md:py-6">Produto vendido</Button>
+            <Button
+              size="lg"
+              disabled
+              className="w-full text-sm md:text-base py-5 md:py-6"
+            >
+              {sold ? "Produto vendido" : "Variante indisponível"}
+            </Button>
           )}
 
           <div className="flex flex-wrap gap-4 md:gap-6 text-xs md:text-sm text-gray-300 pt-2 border-t border-gray-700">

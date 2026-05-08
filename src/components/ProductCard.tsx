@@ -1,18 +1,33 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   Product,
   conditionLabel,
   conditionColor,
   statusLabel,
-  statusColor
+  statusColor,
+  getProductVariants
 } from "@/lib/products";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Eye, Layers } from "lucide-react";
 import { recordProductClick } from "@/hooks/useProductClick";
 
 const ProductCard = ({ product }: { product: Product }) => {
+  const [variantCount, setVariantCount] = useState(0);
   const sold = product.status === "vendido";
+
+  useEffect(() => {
+    const loadVariants = async () => {
+      try {
+        const variants = await getProductVariants(product.id);
+        setVariantCount(variants.length);
+      } catch (err) {
+        console.error("Error loading variants:", err);
+      }
+    };
+    loadVariants();
+  }, [product.id]);
 
   const handleViewDetailsClick = () => {
     recordProductClick(product.id, { type: "product_card" });
@@ -54,6 +69,12 @@ const ProductCard = ({ product }: { product: Product }) => {
           {(product as any).is_on_request && (
             <Badge className="bg-orange-500 text-white">
               Por Pedido
+            </Badge>
+          )}
+
+          {variantCount > 0 && (
+            <Badge className="bg-blue-500 text-white flex items-center gap-1">
+              <Layers className="h-3 w-3" /> {variantCount} variações
             </Badge>
           )}
         </div>
