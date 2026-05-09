@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase, Product, Order, Customer } from "@/lib/supabase";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Loader2, TrendingUp, ShoppingCart, Users, Eye, Package, DollarSign, MessageCircle } from "lucide-react";
-import { getWhatsAppClickCount, getWhatsAppClicksRankingByModel } from "@/lib/products";
+import { getWhatsAppClickCount, getWhatsAppClicksRankingByModel, getModelViewsAndWhatsAppClicks } from "@/lib/products";
 
 interface InsightsData {
   totalProducts: number;
@@ -16,6 +16,7 @@ interface InsightsData {
   topProducts: Product[];
   topProductsByClicks: Array<{ product_id: string; product_name: string; total_clicks: number }>;
   whatsappClicksByModel: Array<{ modelId: string; modelName: string; totalClicks: number }>;
+  modelViewsAndClicks: Array<{ modelId: string; modelName: string; views: number; whatsappClicks: number; conversionRate: number }>;
   conditionDistribution: Array<{ name: string; value: number }>;
   brandDistribution: Array<{ name: string; value: number }>;
   orderStatus: Array<{ status: string; count: number }>;
@@ -148,6 +149,9 @@ export function Insights() {
       // Get WhatsApp clicks by model
       const whatsappClicksByModel = await getWhatsAppClicksRankingByModel();
 
+      // Get model views and WhatsApp clicks with conversion rate
+      const modelViewsAndClicks = await getModelViewsAndWhatsAppClicks();
+
       setData({
         totalProducts,
         totalViews,
@@ -160,6 +164,7 @@ export function Insights() {
         topProducts,
         topProductsByClicks,
         whatsappClicksByModel,
+        modelViewsAndClicks,
         conditionDistribution,
         brandDistribution,
         orderStatus,
@@ -364,18 +369,26 @@ export function Insights() {
           </div>
         </div>
 
-        {/* WhatsApp Clicks by Model */}
-        {data.whatsappClicksByModel && data.whatsappClicksByModel.length > 0 && (
+        {/* Model Views and WhatsApp Clicks */}
+        {data.modelViewsAndClicks && data.modelViewsAndClicks.length > 0 && (
           <div className="rounded-lg border bg-card p-4">
-            <h3 className="font-semibold mb-4">Cliques no WhatsApp por Modelo</h3>
+            <h3 className="font-semibold mb-4">Modelos: Visualizações vs Cliques WhatsApp</h3>
             <div className="space-y-2">
-              {data.whatsappClicksByModel.map((model, index) => (
-                <div key={model.modelId} className="flex items-center justify-between text-sm p-2 border-b last:border-b-0">
-                  <div className="flex items-center gap-3">
+              {data.modelViewsAndClicks.map((model, index) => (
+                <div key={model.modelId} className="flex items-center justify-between text-sm p-3 border-b last:border-b-0 hover:bg-muted/50 rounded">
+                  <div className="flex items-center gap-3 flex-1">
                     <span className="font-semibold text-muted-foreground min-w-6">#{index + 1}</span>
-                    <span className="truncate">{model.modelName}</span>
+                    <div className="flex-1">
+                      <span className="truncate font-medium">{model.modelName}</span>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {model.views} visualizações • {model.whatsappClicks} cliques
+                      </div>
+                    </div>
                   </div>
-                  <span className="font-bold">{model.totalClicks}</span>
+                  <div className="text-right">
+                    <div className="font-bold text-lg">{model.conversionRate}%</div>
+                    <div className="text-xs text-muted-foreground">taxa</div>
+                  </div>
                 </div>
               ))}
             </div>

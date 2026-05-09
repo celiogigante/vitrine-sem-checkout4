@@ -734,6 +734,58 @@ export async function getWhatsAppClicksByModel(modelId: string): Promise<number>
   }
 }
 
+export async function getModelViewsAndWhatsAppClicks(): Promise<Array<{ modelId: string; modelName: string; views: number; whatsappClicks: number; conversionRate: number }>> {
+  try {
+    // Get all models with their views
+    const { data: models, error: modelsError } = await supabase
+      .from("models")
+      .select("id, name, views");
+
+    if (modelsError) {
+      console.error("Error fetching models:", modelsError);
+      return [];
+    }
+
+    // Get all WhatsApp clicks grouped by model_id
+    const { data: clicks, error: clicksError } = await supabase
+      .from("whatsapp_clicks")
+      .select("model_id");
+
+    if (clicksError) {
+      console.error("Error fetching WhatsApp clicks:", clicksError);
+      return [];
+    }
+
+    // Group clicks by model_id
+    const clicksByModel = new Map<string, number>();
+    (clicks || []).forEach((click: any) => {
+      if (click.model_id) {
+        clicksByModel.set(click.model_id, (clicksByModel.get(click.model_id) || 0) + 1);
+      }
+    });
+
+    // Build result array with views and clicks
+    return (models || [])
+      .map((model: any) => {
+        const whatsappClicks = clicksByModel.get(model.id) || 0;
+        const views = model.views || 0;
+        const conversionRate = views > 0 ? (whatsappClicks / views) * 100 : 0;
+
+        return {
+          modelId: model.id,
+          modelName: model.name,
+          views,
+          whatsappClicks,
+          conversionRate: Math.round(conversionRate * 10) / 10, // Round to 1 decimal
+        };
+      })
+      .sort((a, b) => b.whatsappClicks - a.whatsappClicks); // Sort by clicks descending
+  } catch (err) {
+    console.error("Exception getting model views and WhatsApp clicks:", err);
+    return [];
+  }
+}
+
 export async function getWhatsAppClicksRankingByModel(): Promise<Array<{ modelId: string; modelName: string; totalClicks: number }>> {
   try {
     // Get all clicks grouped by model_id
