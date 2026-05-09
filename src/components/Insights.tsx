@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase, Product, Order, Customer } from "@/lib/supabase";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
-import { Loader2, TrendingUp, ShoppingCart, Users, Eye, Package, DollarSign } from "lucide-react";
+import { Loader2, TrendingUp, ShoppingCart, Users, Eye, Package, DollarSign, MessageCircle } from "lucide-react";
+import { getWhatsAppClickCount } from "@/lib/products";
 
 interface InsightsData {
   totalProducts: number;
   totalViews: number;
+  whatsappClicks: number;
   featuredProducts: number;
   promotionProducts: number;
   totalCustomers: number;
@@ -139,9 +141,13 @@ export function Insights() {
         count,
       }));
 
+      // Get WhatsApp clicks count
+      const whatsappClicks = await getWhatsAppClickCount();
+
       setData({
         totalProducts,
         totalViews,
+        whatsappClicks,
         featuredProducts,
         promotionProducts,
         totalCustomers,
@@ -237,6 +243,16 @@ export function Insights() {
               <p className="text-2xl font-bold mt-1">{data.totalViews.toLocaleString("pt-BR")}</p>
             </div>
             <Eye className="h-8 w-8 text-purple-500 opacity-20" />
+          </div>
+        </div>
+
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Cliques no WhatsApp</p>
+              <p className="text-2xl font-bold mt-1">{data.whatsappClicks.toLocaleString("pt-BR")}</p>
+            </div>
+            <MessageCircle className="h-8 w-8 text-green-500 opacity-20" />
           </div>
         </div>
 

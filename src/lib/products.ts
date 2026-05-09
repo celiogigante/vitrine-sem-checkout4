@@ -673,3 +673,59 @@ export async function incrementModelViews(modelId: string): Promise<void> {
     console.error("Exception incrementing model views:", err);
   }
 }
+
+// ===== WhatsApp Clicks =====
+
+export async function recordWhatsAppClick(productId?: string, modelId?: string): Promise<void> {
+  try {
+    await supabase
+      .from("whatsapp_clicks")
+      .insert([
+        {
+          product_id: productId || null,
+          model_id: modelId || null,
+          user_agent: navigator.userAgent,
+          referrer: document.referrer,
+        },
+      ]);
+  } catch (err) {
+    console.error("Error recording WhatsApp click:", err);
+  }
+}
+
+export async function getWhatsAppClickCount(): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from("whatsapp_clicks")
+      .select("*", { count: "exact", head: true });
+
+    if (error) {
+      console.error("Error getting WhatsApp click count:", error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (err) {
+    console.error("Exception getting WhatsApp click count:", err);
+    return 0;
+  }
+}
+
+export async function getWhatsAppClicksByModel(modelId: string): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from("whatsapp_clicks")
+      .select("*", { count: "exact", head: true })
+      .eq("model_id", modelId);
+
+    if (error) {
+      console.error("Error getting WhatsApp clicks by model:", error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (err) {
+    console.error("Exception getting WhatsApp clicks by model:", err);
+    return 0;
+  }
+}
