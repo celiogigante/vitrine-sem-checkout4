@@ -4,7 +4,7 @@ import { ArrowLeft, MessageCircle, Shield, CheckCircle, BatteryFull } from "luci
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { conditionLabel, conditionColor, getWhatsAppLink, statusLabel, statusColor, type Product, getProduct, incrementViews, incrementModelViews, getProductVariants, conditionLabel as getConditionLabel } from "@/lib/products";
+import { conditionLabel, conditionColor, getWhatsAppLink, statusLabel, statusColor, type Product, getProduct, incrementViews, incrementModelViews, getProductVariants, conditionLabel as getConditionLabel, recordWhatsAppClick } from "@/lib/products";
 import { recordProductClick, recordProductView } from "@/hooks/useProductClick";
 import type { ProductVariant } from "@/lib/supabase";
 import "@/styles/gallery-slide.css";
@@ -27,6 +27,7 @@ const ProductDetail = () => {
   const handleWhatsAppClick = () => {
     if (product) {
       recordProductClick(product.id, { type: "whatsapp" });
+      recordWhatsAppClick(product.id, product.modelId);
     }
   };
 
