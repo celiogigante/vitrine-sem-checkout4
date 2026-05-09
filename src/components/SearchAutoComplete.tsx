@@ -122,9 +122,9 @@ const SearchAutoComplete = ({
                 }`}
               >
                 <img
-                  src={product.image_url || "https://images.unsplash.com/photo-1511707267537-b85faf00021e?w=100&h=100&fit=crop"}
+                  src={product.images?.[0] || "https://images.unsplash.com/photo-1511707267537-b85faf00021e?w=100&h=100&fit=crop"}
                   alt={product.name}
-                  className="w-10 h-10 rounded object-cover"
+                  className="w-12 h-12 rounded object-contain bg-gray-100"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-muted-foreground">
