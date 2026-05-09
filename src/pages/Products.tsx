@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { SlidersHorizontal, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProductCard from "@/components/ProductCard";
+import SearchAutoComplete from "@/components/SearchAutoComplete";
 import { conditionLabel } from "@/lib/productHelpers";
 import { getProducts, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
@@ -78,10 +78,12 @@ const Products = () => {
       {/* Filters */}
       <div className="flex flex-col gap-3 mb-8">
         <div className="flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar celular..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
-          </div>
+          <SearchAutoComplete
+            products={products}
+            value={search}
+            onChange={setSearch}
+            placeholder="Buscar celular..."
+          />
           <Select value={brand} onValueChange={setBrand}>
             <SelectTrigger className="w-full md:w-40"><SelectValue placeholder="Marca" /></SelectTrigger>
             <SelectContent>
