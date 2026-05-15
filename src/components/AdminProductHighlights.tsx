@@ -93,6 +93,7 @@ export default function AdminProductHighlights() {
     }
 
     try {
+      const count = selectedProductIds.size;
       const maxOrder = highlights.length > 0 ? Math.max(...highlights.map((h) => h.order_index)) : 0;
 
       const newHighlights = Array.from(selectedProductIds).map((productId, index) => ({
@@ -107,7 +108,7 @@ export default function AdminProductHighlights() {
       setSelectedProductIds(new Set());
       setSearchQuery("");
       loadData();
-      toast({ title: `${selectedProductIds.size} produto(s) adicionado(s) aos destaques!` });
+      toast({ title: `${count} produto(s) adicionado(s) aos destaques!` });
     } catch (err) {
       console.error("Error adding highlight:", err);
       toast({
