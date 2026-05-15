@@ -185,8 +185,8 @@ export default function AdminProductHighlights() {
 
           {/* Suggestions dropdown */}
           {showSuggestions && availableProducts.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 border rounded-lg bg-card shadow-lg z-50">
-              <div className="max-h-64 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 border rounded-lg bg-card shadow-lg z-40">
+              <div className="max-h-80 overflow-y-auto">
                 {filteredProducts.length === 0 ? (
                   <div className="p-3 text-sm text-muted-foreground text-center">
                     Nenhum produto encontrado
@@ -224,7 +224,7 @@ export default function AdminProductHighlights() {
           )}
 
           {showSuggestions && availableProducts.length === 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 border rounded-lg bg-card shadow-lg z-50">
+            <div className="absolute top-full left-0 right-0 mt-1 border rounded-lg bg-card shadow-lg z-40">
               <div className="p-3 text-sm text-muted-foreground text-center">
                 Todos os produtos já são destaques
               </div>
