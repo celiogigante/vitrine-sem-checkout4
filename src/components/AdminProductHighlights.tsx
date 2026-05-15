@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ProductHighlight {
   id: string;
@@ -19,7 +20,7 @@ export default function AdminProductHighlights() {
     new Set()
   );
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -66,17 +67,9 @@ export default function AdminProductHighlights() {
   };
 
   const handleAddHighlight = async () => {
-    if (!selectedProductId) {
+    if (selectedProductIds.size === 0) {
       toast({
-        title: "Selecione um produto",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (highlightedProductIds.has(selectedProductId)) {
-      toast({
-        title: "Este produto já é um destaque",
+        title: "Selecione pelo menos um produto",
         variant: "destructive",
       });
       return;
@@ -85,18 +78,19 @@ export default function AdminProductHighlights() {
     try {
       const maxOrder = highlights.length > 0 ? Math.max(...highlights.map((h) => h.order_index)) : 0;
 
-      const { error } = await supabase.from("product_highlights").insert([
-        {
-          product_id: selectedProductId,
-          order_index: maxOrder + 1,
-        },
-      ]);
+      const newHighlights = Array.from(selectedProductIds).map((productId, index) => ({
+        product_id: productId,
+        order_index: maxOrder + index + 1,
+      }));
+
+      const { error } = await supabase.from("product_highlights").insert(newHighlights);
 
       if (error) throw error;
 
-      setSelectedProductId("");
+      setSelectedProductIds(new Set());
+      setSearchQuery("");
       loadData();
-      toast({ title: "Produto adicionado aos destaques!" });
+      toast({ title: `${selectedProductIds.size} produto(s) adicionado(s) aos destaques!` });
     } catch (err) {
       console.error("Error adding highlight:", err);
       toast({
@@ -158,30 +152,19 @@ export default function AdminProductHighlights() {
         <p className="text-sm text-muted-foreground">
           Pesquise um produto para adicionar ao carrossel de destaques do hero.
         </p>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="relative">
-            <div className="flex gap-2 relative">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  placeholder="Pesquisar por nome, marca ou modelo..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setShowSuggestions(true);
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  className="pl-9"
-                />
-              </div>
-              <Button
-                onClick={handleAddHighlight}
-                disabled={!selectedProductId}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar
-              </Button>
-            </div>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+            <Input
+              placeholder="Pesquisar por nome, marca ou modelo..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              className="pl-9"
+            />
 
             {/* Suggestions dropdown */}
             {showSuggestions && availableProducts.length > 0 && (
@@ -193,20 +176,30 @@ export default function AdminProductHighlights() {
                     </div>
                   ) : (
                     filteredProducts.map((p) => (
-                      <button
+                      <label
                         key={p.id}
-                        onClick={() => {
-                          setSelectedProductId(p.id);
-                          setSearchQuery("");
-                          setShowSuggestions(false);
-                        }}
-                        className="w-full text-left px-3 py-2 hover:bg-secondary/50 border-b last:border-0 transition-colors"
+                        className="flex items-start gap-3 px-3 py-2 hover:bg-secondary/50 border-b last:border-0 transition-colors cursor-pointer"
                       >
-                        <div className="font-medium text-sm">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {p.brand} • R$ {p.price.toLocaleString("pt-BR")}
+                        <Checkbox
+                          checked={selectedProductIds.has(p.id)}
+                          onCheckedChange={(checked) => {
+                            const newSet = new Set(selectedProductIds);
+                            if (checked) {
+                              newSet.add(p.id);
+                            } else {
+                              newSet.delete(p.id);
+                            }
+                            setSelectedProductIds(newSet);
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm">{p.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {p.brand} • R$ {p.price.toLocaleString("pt-BR")}
+                          </div>
                         </div>
-                      </button>
+                      </label>
                     ))
                   )}
                 </div>
@@ -222,16 +215,25 @@ export default function AdminProductHighlights() {
             )}
           </div>
 
-          {selectedProductId && (
+          {selectedProductIds.size > 0 && (
             <div className="bg-secondary/50 p-3 rounded-lg">
               <div className="text-sm font-medium">
-                {products.find((p) => p.id === selectedProductId)?.name}
+                {selectedProductIds.size} produto(s) selecionado(s)
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                Pronto para adicionar ao carrossel
+                Clique em "Adicionar Selecionados" para confirmar
               </div>
             </div>
           )}
+
+          <Button
+            onClick={handleAddHighlight}
+            disabled={selectedProductIds.size === 0}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Selecionados ({selectedProductIds.size})
+          </Button>
         </div>
       </div>
 
