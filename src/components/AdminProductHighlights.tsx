@@ -242,7 +242,9 @@ export default function AdminProductHighlights() {
               </div>
             </div>
           )}
+        </div>
 
+        <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-card border-t">
           <Button
             onClick={handleAddHighlight}
             disabled={selectedProductIds.size === 0}
