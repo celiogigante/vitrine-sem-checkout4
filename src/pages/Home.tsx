@@ -68,7 +68,7 @@ const Home = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mobileColumns, setMobileColumns] = useState<1 | 2>(1);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 9;
+  const ITEMS_PER_PAGE = 12;
 
   useEffect(() => {
     const h = () => setS(getSettings());
