@@ -192,8 +192,7 @@ const Home = () => {
     [products, brandFilter]
   );
 
-  const featured = filtered.filter((p) => p.featured).slice(0, 4);
-  const vitrine = filtered.filter((p) => !p.featured);
+  const vitrine = filtered;
   const totalPages = Math.ceil(vitrine.length / ITEMS_PER_PAGE);
   const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
   const list = vitrine.slice(startIdx, startIdx + ITEMS_PER_PAGE);
@@ -245,51 +244,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold text-white">Em destaque</h2>
-
-          {/* Mobile columns toggle - Only visible on mobile */}
-          <div className="md:hidden flex gap-0">
-            <button
-              onClick={() => setMobileColumns(2)}
-              className={`px-3 py-1 rounded-l-md text-sm font-medium transition-colors ${
-                mobileColumns === 2
-                  ? "bg-white text-black"
-                  : "bg-gray-700 text-white hover:bg-gray-600"
-              }`}
-            >
-              2 colunas
-            </button>
-            <button
-              onClick={() => setMobileColumns(1)}
-              className={`px-3 py-1 rounded-r-md text-sm font-medium transition-colors ${
-                mobileColumns === 1
-                  ? "bg-white text-black"
-                  : "bg-gray-700 text-white hover:bg-gray-600"
-              }`}
-            >
-              1 coluna
-            </button>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="animate-spin" />
-          </div>
-        ) : (
-          <div className={`grid ${mobileColumns === 1 ? "grid-cols-1" : "grid-cols-2"} md:grid-cols-4 gap-4`} style={{ gridAutoRows: "1fr" }}>
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* Vitrine */}
-      <section className="container mx-auto px-4 pb-16">
+      <section className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold text-white">Vitrine</h2>
 
